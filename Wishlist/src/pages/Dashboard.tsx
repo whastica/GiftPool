@@ -12,8 +12,8 @@ import {
   Share2,
 } from 'lucide-react';
 import Navbar from '../components/common/Navbar';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 import ProgressBar from '../components/common/ProgressBar';
 
 type User = {

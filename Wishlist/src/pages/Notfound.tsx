@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { Home, Search } from 'lucide-react'
-import Button from '../components/common/Button'
+import Button from '../components/ui/Button'
 
 const NotFound = () => {
   const navigate = useNavigate()

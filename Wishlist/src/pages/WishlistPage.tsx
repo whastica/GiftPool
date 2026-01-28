@@ -2,15 +2,15 @@ import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Share2, Copy, Heart, Video as VideoIcon, MessageCircle } from 'lucide-react'
 import Navbar from '../components/common/Navbar'
-import Button from '../components/common/Button'
-import Card from '../components/common/Card'
+import Button from '../components/ui/Button'
+import Card from '../components/ui/Card'
 import ProgressBar from '../components/common/ProgressBar'
-import Modal from '../components/common/Modal'
+import Modal from '../components/ui/Modal'
 
 const WishlistPage = () => {
   const { slug } = useParams()
   const [showContributeModal, setShowContributeModal] = useState(false)
-  const [selectedAmount, setSelectedAmount] = useState(null)
+  const [selectedAmount, setSelectedAmount] = useState<number | null>(null)
 
   // Simulated wishlist data
   const wishlist = {
