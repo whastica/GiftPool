@@ -9,8 +9,8 @@ import {
   Gift,
 } from 'lucide-react';
 import Navbar from '../components/common/Navbar';
-import Button from '../components/common/Button';
-import Card from '../components/common/Card';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
 
 type FormData = {
   productUrl: string;

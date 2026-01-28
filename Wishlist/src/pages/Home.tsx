@@ -2,8 +2,8 @@ import { useNavigate } from 'react-router-dom'
 import { Video, Shield, Sparkles } from 'lucide-react'
 import Navbar from '../components/common/Navbar'
 import Footer from '../components/common/Footer'
-import Button from '../components/common/Button'
-import Card from '../components/common/Card'
+import Button from '../components/ui/Button'
+import Card from '../components/ui/Card'
 
 const Home = () => {
   const navigate = useNavigate()
