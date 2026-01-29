@@ -11,7 +11,6 @@ import {
   Copy,
   Share2,
 } from 'lucide-react';
-import Navbar from '../components/common/Navbar';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import ProgressBar from '../components/common/ProgressBar';
@@ -152,7 +151,6 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
 
       {/* Header */}
       <div className="gradient-bg py-12">
