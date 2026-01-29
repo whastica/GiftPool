@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Share2, Copy, Heart, Video as VideoIcon, MessageCircle } from 'lucide-react'
-import Navbar from '../components/common/Navbar'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import ProgressBar from '../components/common/ProgressBar'
@@ -49,8 +48,6 @@ const WishlistPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
-
       {/* Hero Banner */}
       <div className="gradient-bg py-8">
         <div className="container mx-auto px-6 text-center">

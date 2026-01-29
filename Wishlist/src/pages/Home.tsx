@@ -1,7 +1,5 @@
 import { useNavigate } from 'react-router-dom'
 import { Video, Shield, Sparkles } from 'lucide-react'
-import Navbar from '../components/common/Navbar'
-import Footer from '../components/common/Footer'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 
@@ -9,10 +7,7 @@ const Home = () => {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen">
-      {/* Navbar */}
-      <Navbar transparent={true} />
-
+    <>
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden gradient-bg">
         {/* Animated background blobs */}
@@ -210,10 +205,7 @@ const Home = () => {
           <p className="text-white/80 mt-4">Gratis para siempre · Sin tarjeta de crédito</p>
         </div>
       </section>
-
-      {/* Footer */}
-      <Footer />
-    </div>
+    </>
   )
 }
 

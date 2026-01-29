@@ -8,7 +8,6 @@ import {
   AlertCircle,
   Gift,
 } from 'lucide-react';
-import Navbar from '../components/common/Navbar';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 
@@ -91,7 +90,6 @@ const CreateWishlist = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
 
       {/* Progress Steps */}
       <div className="bg-white border-b border-gray-200 py-6">
