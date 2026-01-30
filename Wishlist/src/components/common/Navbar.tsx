@@ -46,6 +46,24 @@ const Navbar = ({ transparent = false }) => {
             >
               Crear Wishlist
             </button>
+            <button
+              onClick={() => navigate('/login')}
+              className={transparent 
+                ? 'px-4 py-2 text-white border border-white rounded-full hover:bg-white/10 transition-all'
+                : 'btn-secondary'
+              }
+            >
+              Iniciar Sesión
+            </button>
+            <button
+              onClick={() => navigate('/register')}
+              className={transparent 
+                ? 'px-4 py-2 bg-primary-600 text-white font-semibold rounded-full hover:bg-primary-500 transition-all'
+                : 'btn-primary'
+              }
+            >
+              Registrarse
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -89,6 +107,24 @@ const Navbar = ({ transparent = false }) => {
               className="w-full btn-primary"
             >
               Crear Wishlist
+            </button>
+            <button
+              onClick={() => {
+                navigate('/login')
+                setMobileMenuOpen(false)
+              }}
+              className="w-full btn-secondary"
+            >
+              Iniciar Sesión
+            </button>
+            <button
+              onClick={() => {
+                navigate('/register')
+                setMobileMenuOpen(false)
+              }}
+              className="w-full btn-primary"
+            >
+              Registrarse
             </button>
           </div>
         )}

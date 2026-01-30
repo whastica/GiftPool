@@ -1,12 +1,11 @@
 import { Navigate, useLocation } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth' // Actualizamos la ruta del hook useAuth
 
 /**
  * PrivateRoute
  * 
  * Componente que protege rutas privadas.
  * Si el usuario no está autenticado, redirige a login.
- * 
- * TODO: En EPIC 3, integrar con useAuth hook
  */
 
 interface PrivateRouteProps {
@@ -15,10 +14,7 @@ interface PrivateRouteProps {
 
 const PrivateRoute = ({ children }: PrivateRouteProps) => {
   const location = useLocation()
-  
-  // TODO: Reemplazar con useAuth() en EPIC 3
-  // Por ahora, simulamos que el usuario NO está autenticado
-  const isAuthenticated = false // Cambiar a: const { isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth() // Usamos el estado de autenticación del contexto
 
   if (!isAuthenticated) {
     // Guardamos la ubicación a la que el usuario intentaba acceder

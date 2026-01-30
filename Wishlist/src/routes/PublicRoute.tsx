@@ -1,4 +1,5 @@
 import { Navigate } from 'react-router-dom'
+import { useAuth } from '../hooks/useAuth' // Actualizamos la ruta del hook useAuth
 
 /**
  * PublicRoute
@@ -6,8 +7,6 @@ import { Navigate } from 'react-router-dom'
  * Componente para rutas públicas.
  * Si el usuario ya está autenticado y accede a login/register,
  * lo redirige al dashboard.
- * 
- * TODO: En EPIC 3, integrar con useAuth hook
  */
 
 interface PublicRouteProps {
@@ -16,8 +15,7 @@ interface PublicRouteProps {
 }
 
 const PublicRoute = ({ children, restricted = false }: PublicRouteProps) => {
-  // TODO: Reemplazar con useAuth() en EPIC 3
-  const isAuthenticated = false // Cambiar a: const { isAuthenticated } = useAuth()
+  const { isAuthenticated } = useAuth() // Usamos el estado de autenticación del contexto
 
   if (isAuthenticated && restricted) {
     // Si está autenticado e intenta acceder a login/register,
