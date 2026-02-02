@@ -31,10 +31,13 @@ const AuthLayout = () => {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link to="/dashboard" className="flex items-center space-x-2 group">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center space-x-2 group"
+            >
               <span className="text-3xl group-hover:scale-110 transition-transform">🎁</span>
               <span className="text-2xl font-bold gradient-text">GiftPool</span>
-            </Link>
+            </button>
 
             {/* Desktop Navigation */}
             <nav className="hidden md:flex items-center space-x-6">
