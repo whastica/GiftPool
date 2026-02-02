@@ -8,7 +8,7 @@ import PrivateRoute from './PrivateRoute'
 import PublicRoute from './PublicRoute'
 // Pages - Public
 import Home from '../pages/Home'
-import WishlistPage from '../pages/WishlistPage'
+import WishlistPage from '../pages/PublicWishlistPage'
 import CreateWishlist from '../pages/CreateWishlist'
 import CreateWishlistPage from '../pages/CreateWishlist'
 import NotFound from '../pages/Notfound'
