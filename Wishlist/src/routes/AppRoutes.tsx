@@ -16,30 +16,11 @@ import CreateWishlist from '../pages/CreateWishlist'
 import NotFound from '../pages/Notfound'
 
 // Pages - Auth (TODO: Crear en EPIC 3)
-// import Login from '../pages/auth/Login'
-// import Register from '../pages/auth/Register'
+import Login from '../pages/Login'
+import Register from '../pages/Register'
 
 // Pages - Private
 import Dashboard from '../pages/Dashboard'
-
-// Páginas temporales para login/register (las crearemos en EPIC 3)
-const LoginPlaceholder = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50">
-    <div className="text-center">
-      <h1 className="text-4xl font-bold mb-4">🔐 Login</h1>
-      <p className="text-gray-600">Esta página se implementará en EPIC 3</p>
-    </div>
-  </div>
-)
-
-const RegisterPlaceholder = () => (
-  <div className="min-h-screen flex items-center justify-center bg-gray-50">
-    <div className="text-center">
-      <h1 className="text-4xl font-bold mb-4">📝 Registro</h1>
-      <p className="text-gray-600">Esta página se implementará en EPIC 3</p>
-    </div>
-  </div>
-)
 
 /**
  * AppRoutes
@@ -116,7 +97,7 @@ const AppRoutes = () => {
         path="/login"
         element={
           <PublicRoute restricted={true}>
-            <LoginPlaceholder />
+            <Login />
           </PublicRoute>
         }
       />
@@ -125,7 +106,7 @@ const AppRoutes = () => {
         path="/register"
         element={
           <PublicRoute restricted={true}>
-            <RegisterPlaceholder />
+            <Register />
           </PublicRoute>
         }
       />
