@@ -1,24 +1,20 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-
 // Layouts
 import PublicLayout from '../layout/PublicLayout'
 import AuthLayout from '../layout/AuthLayout'
 import CreateFlowLayout from '../layout/CreateFlowLayout'
-
 // Route Guards
 import PrivateRoute from './PrivateRoute'
 import PublicRoute from './PublicRoute'
-
 // Pages - Public
 import Home from '../pages/Home'
 import WishlistPage from '../pages/WishlistPage'
 import CreateWishlist from '../pages/CreateWishlist'
+import CreateWishlistPage from '../pages/CreateWishlist'
 import NotFound from '../pages/Notfound'
-
-// Pages - Auth (TODO: Crear en EPIC 3)
+// Pages - Auth
 import Login from '../pages/Login'
 import Register from '../pages/Register'
-
 // Pages - Private
 import Dashboard from '../pages/Dashboard'
 
@@ -33,7 +29,8 @@ import Dashboard from '../pages/Dashboard'
  *    - Ver wishlists compartidas
  * 
  * 2. Rutas de Creación (con CreateFlowLayout - sin footer)
- *    - Crear wishlist (accesible sin login)
+ *    - Crear wishlist (accesible sin login) - DEPRECATED: usar /create
+ *    - Crear wishlist (requiere login) - NUEVO: wizard completo
  * 
  * 3. Rutas de Autenticación (sin layout, restringidas si ya está logueado)
  *    - Login
@@ -62,7 +59,6 @@ const AppRoutes = () => {
             </PublicRoute>
           }
         />
-
         {/* Página pública para ver wishlists compartidas */}
         <Route
           path="/w/:slug"
@@ -79,12 +75,23 @@ const AppRoutes = () => {
           Sin footer para mantener foco en el flujo
           ============================================ */}
       <Route element={<CreateFlowLayout />}>
+        {/* DEPRECATED: Versión antigua sin wizard completo */}
         <Route
           path="/crear-wishlist"
           element={
             <PublicRoute>
               <CreateWishlist />
             </PublicRoute>
+          }
+        />
+        
+        {/* NUEVO: Wizard completo de creación (EPIC 4) - Requiere autenticación */}
+        <Route
+          path="/create"
+          element={
+            <PrivateRoute>
+              <CreateWishlistPage />
+            </PrivateRoute>
           }
         />
       </Route>
@@ -101,7 +108,6 @@ const AppRoutes = () => {
           </PublicRoute>
         }
       />
-
       <Route
         path="/register"
         element={
