@@ -1,7 +1,7 @@
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
 
 type BaseProps = {
-  label?: string;
+  label?: React.ReactNode; // Change from string to ReactNode
   error?: string;
   helperText?: string;
   fullWidth?: boolean;
