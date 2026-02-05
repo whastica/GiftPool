@@ -9,6 +9,37 @@ import type {
 import { publicWishlistService } from '../services/publicWishlistService'
 import { useContribute } from '../hooks/useContribute'
 
+// Tipos para contribuciones
+
+/**
+ * Métodos de pago disponibles
+ */
+export type PaymentMethod = 'mercadopago' | 'paypal' | 'nequi';
+
+/**
+ * Datos necesarios para iniciar una contribución
+ */
+export interface ContributionData {
+  wishlistId: string;
+  amount: number;
+  name: string;
+  email?: string;
+  message?: string;
+  isAnonymous: boolean;
+  includeVideo?: boolean;
+  paymentMethod: PaymentMethod;
+}
+
+/**
+ * Respuesta al iniciar una contribución
+ */
+export interface ContributionResponse {
+  success: boolean;
+  contributionId?: string;
+  paymentUrl?: string;
+  error?: string;
+}
+
 export const usePublicWishlist = () => {
   const { slug } = useParams<{ slug: string }>()
 
@@ -68,7 +99,7 @@ export const usePublicWishlist = () => {
    * Wrapper público para contribuir
    */
   const contribute = async (
-    data: ContributeFormData,
+    data: ContributionData,
     videoBlob?: Blob
   ): Promise<boolean> => {
     if (!wishlist) {

@@ -3,7 +3,7 @@ import type { PublicWishlist } from '../types/publicWishlistTypes'
 
 export const mockWishlist: PublicWishlist = {
   id: 'wl_mock_123',
-  slug: 'cumpleanos-maria',
+  slug: 'maria-cumple-2025',
   title: 'Cumpleaños de María',
   ownerName: 'María',
   eventDate: '2026-02-14',
@@ -17,7 +17,7 @@ export const mockWishlist: PublicWishlist = {
     name: 'Cámara Instantánea',
     description: 'Cámara instantánea ideal para capturar momentos especiales',
     price: 100000,
-    image: '/images/camera.jpg',
+    image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&h=500&fit=crop',
     url: 'https://example.com/camera',
     marketplace: 'Example Store',
     available: true,

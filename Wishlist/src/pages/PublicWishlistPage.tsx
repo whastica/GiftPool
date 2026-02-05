@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { AlertCircle, Calendar, TrendingUp } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { AlertCircle, Calendar, TrendingUp, RefreshCw } from 'lucide-react'
 import { usePublicWishlist } from '../hooks/usePublicWishlist'
 import {
   generateMetaTags,
@@ -18,13 +18,15 @@ import Skeleton from '../components/ui/Skeleton'
 import WishlistStatusBadge from '../components/wishlist/WishlistStatusBadge'
 import ProductDisplay from '../components/wishlist/ProductDisplay'
 import ContributorsList from '../components/wishlist/ContributorsList'
-// ✅ EPIC 6: Importar modal multi-step desde contribute/
-import ContributeModal from '../components/contribute/ContributeModal'
 import ShareButtons from '../components/wishlist/ShareButtons'
+// ✅ EPIC 6: Modal multi-step
+import ContributeModal from '../components/contribute/ContributeModal'
 
 const PublicWishlistPage = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [showContributeModal, setShowContributeModal] = useState(false)
+  const [showSuccessToast, setShowSuccessToast] = useState(false)
 
   const {
     wishlist,
@@ -32,12 +34,48 @@ const PublicWishlistPage = () => {
     error,
     isContributing,
     contribute,
+    reload,
     progress,
     remaining,
     isExpired,
     isCompleted,
     daysRemaining,
   } = usePublicWishlist()
+
+  /**
+   * ✅ EPIC 6: Guardar slug actual para poder volver después del pago
+   */
+  useEffect(() => {
+    if (wishlist?.slug) {
+      localStorage.setItem('last_wishlist_slug', wishlist.slug)
+    }
+  }, [wishlist?.slug])
+
+  /**
+   * ✅ EPIC 6: Detectar si venimos de la página de éxito y recargar datos
+   */
+  useEffect(() => {
+    const contributionSuccess = localStorage.getItem('giftpool_contribution_success')
+    const shouldReload = (location.state as any)?.reloadData
+    
+    if (contributionSuccess === 'true' || shouldReload) {
+      console.log('🔄 Reloading wishlist after contribution...')
+      
+      // Mostrar toast de éxito
+      setShowSuccessToast(true)
+      
+      // Recargar datos
+      reload()
+      
+      // Limpiar flag
+      localStorage.removeItem('giftpool_contribution_success')
+      
+      // Ocultar toast después de 5 segundos
+      setTimeout(() => {
+        setShowSuccessToast(false)
+      }, 5000)
+    }
+  }, [location, reload])
 
   /**
    * SEO / Meta tags
@@ -88,6 +126,21 @@ const PublicWishlistPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* ✅ EPIC 6: Toast de éxito después de contribución */}
+      {showSuccessToast && (
+        <div className="fixed top-4 right-4 z-50 animate-fade-in-down">
+          <div className="bg-green-500 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 max-w-md">
+            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
+              <RefreshCw className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="font-bold">¡Contribución registrada!</p>
+              <p className="text-sm opacity-90">La lista se ha actualizado</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Hero */}
       <div className="bg-gradient-to-r from-primary-600 to-secondary-600 py-12 text-center text-white">
         <div className="text-5xl mb-3">🎁</div>
@@ -136,10 +189,23 @@ const PublicWishlistPage = () => {
                 💝 Aportar ahora
               </Button>
             )}
+            
+            {/* ✅ EPIC 6: Mostrar mensaje si se completó la meta */}
+            {isCompleted && (
+              <div className="mt-6 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 text-center">
+                <p className="text-lg font-bold text-green-900 mb-1">
+                  🎉 ¡Meta alcanzada!
+                </p>
+                <p className="text-sm text-green-700">
+                  Este regalo ya fue completado gracias a la generosidad de todos
+                </p>
+              </div>
+            )}
           </Card>
 
           <ProductDisplay product={wishlist.product} />
 
+          {/* ✅ EPIC 6: Lista de contribuidores actualizada */}
           <ContributorsList
             contributors={wishlist.contributors}
             total={wishlist.contributorsCount}
@@ -163,9 +229,11 @@ const PublicWishlistPage = () => {
               Aporte promedio:{' '}
               <strong>
                 $
-                {Math.round(
-                  wishlist.currentAmount / wishlist.contributorsCount
-                ).toLocaleString()}
+                {wishlist.contributorsCount > 0
+                  ? Math.round(
+                      wishlist.currentAmount / wishlist.contributorsCount
+                    ).toLocaleString()
+                  : 0}
               </strong>
             </p>
           </Card>

@@ -1,7 +1,6 @@
 // src/services/publicWishlistService.ts
-
 import api from './api'
-import type { PublicWishlist, ContributeFormData } from '../types/publicWishlistTypes'
+import type { PublicWishlist, ContributeFormData, PublicContributor } from '../types/publicWishlistTypes'
 import { mockWishlist } from '../mocks/mockData'
 
 /**
@@ -14,15 +13,17 @@ export const publicWishlistService = {
    */
   async getBySlug(slug: string): Promise<PublicWishlist> {
     // ─────────────────────────────────────────────
-    // DEV MODE → usar mocks
+    // DEV MODE → usar mocks con contribuciones dinámicas
     // ─────────────────────────────────────────────
     if (import.meta.env.DEV) {
       await simulateDelay(500)
-
+      
       if (slug === mockWishlist.slug || slug === 'wl_mock_123') {
-        return normalizeMockWishlist(mockWishlist, slug)
+        // ✅ EPIC 6: Cargar contribuciones dinámicas desde localStorage
+        const wishlistWithContributions = loadMockContributions(mockWishlist)
+        return normalizeMockWishlist(wishlistWithContributions, slug)
       }
-
+      
       return getMockWishlist(slug)
     }
 
@@ -43,29 +44,41 @@ export const publicWishlistService = {
   /**
    * Crear contribución a una wishlist
    */
- async contribute(
-  wishlistId: string,
-  data: ContributeFormData
-): Promise<{ success: boolean; checkoutUrl?: string }> {
-  if (import.meta.env.DEV) {
-    await simulateDelay(600)
+  async contribute(
+    wishlistId: string,
+    data: ContributeFormData
+  ): Promise<{ success: boolean; checkoutUrl?: string }> {
+    if (import.meta.env.DEV) {
+      await simulateDelay(600)
+      
+      // ✅ EPIC 6: Guardar contribución en localStorage para simular persistencia
+      const contributionId = `contrib_${Date.now()}`
+      
+      saveMockContribution(wishlistId, {
+        id: contributionId,
+        name: data.isAnonymous ? 'Anónimo' : data.name,
+        amount: data.amount,
+        message: data.message,
+        isAnonymous: data.isAnonymous,
+        createdAt: new Date().toISOString(),
+      })
 
+      return {
+        success: true,
+        checkoutUrl: `/contribute/checkout/${contributionId}?method=mercadopago`,
+      }
+    }
+
+    const response = await api.post(
+      `/wishlists/${wishlistId}/contribute`,
+      data
+    )
+    
     return {
       success: true,
-      checkoutUrl: `/contribute/checkout/contrib_${Date.now()}?method=mercadopago`,
+      checkoutUrl: response.data.checkoutUrl,
     }
-  }
-
-  const response = await api.post(
-    `/wishlists/${wishlistId}/contribute`,
-    data
-  )
-
-  return {
-    success: true,
-    checkoutUrl: response.data.checkoutUrl,
-  }
-},
+  },
 
   /**
    * Registrar visualización de wishlist (analytics)
@@ -80,6 +93,86 @@ export const publicWishlistService = {
       console.debug('Error tracking wishlist view:', error)
     }
   },
+}
+
+/* ───────────────────────────────────────────── */
+/* EPIC 6: Mock Contributions System            */
+/* ───────────────────────────────────────────── */
+
+const MOCK_CONTRIBUTIONS_KEY = 'giftpool_mock_contributions'
+
+/**
+ * Guardar contribución mock en localStorage
+ */
+function saveMockContribution(wishlistId: string, contribution: PublicContributor): void {
+  try {
+    const stored = localStorage.getItem(MOCK_CONTRIBUTIONS_KEY)
+    const contributions: Record<string, PublicContributor[]> = stored ? JSON.parse(stored) : {}
+    
+    if (!contributions[wishlistId]) {
+      contributions[wishlistId] = []
+    }
+    
+    contributions[wishlistId].push(contribution)
+    
+    localStorage.setItem(MOCK_CONTRIBUTIONS_KEY, JSON.stringify(contributions))
+    
+    console.log('✅ Mock contribution saved:', contribution)
+  } catch (error) {
+    console.error('❌ Error saving mock contribution:', error)
+  }
+}
+
+/**
+ * Cargar contribuciones mock desde localStorage
+ */
+function loadMockContributions(baseWishlist: PublicWishlist): PublicWishlist {
+  try {
+    const stored = localStorage.getItem(MOCK_CONTRIBUTIONS_KEY);
+    console.log('🔍 localStorage content:', stored); // Depuración
+
+    if (!stored) return baseWishlist;
+
+    const contributions: Record<string, PublicContributor[]> = JSON.parse(stored);
+    const wishlistContributions = contributions[baseWishlist.id] || [];
+
+    if (wishlistContributions.length === 0) return baseWishlist;
+
+    // Combinar contribuciones originales con las nuevas
+    const allContributors = [...baseWishlist.contributors, ...wishlistContributions];
+
+    // Calcular totales actualizados
+    const totalAmount = allContributors.reduce((sum, c) => sum + c.amount, 0);
+
+    console.log(`✅ Loaded ${wishlistContributions.length} mock contributions for wishlist ${baseWishlist.id}`);
+    console.log('🛠️ Updated PublicWishlist object:', {
+      ...baseWishlist,
+      contributors: allContributors,
+      contributorsCount: allContributors.length,
+      currentAmount: totalAmount,
+      status: totalAmount >= baseWishlist.targetAmount ? 'completed' : baseWishlist.status,
+    });
+
+    return {
+      ...baseWishlist,
+      contributors: allContributors,
+      contributorsCount: allContributors.length,
+      currentAmount: totalAmount,
+      // Actualizar status si se completó la meta
+      status: totalAmount >= baseWishlist.targetAmount ? 'completed' : baseWishlist.status,
+    }
+  } catch (error) {
+    console.error('❌ Error loading mock contributions:', error);
+    return baseWishlist;
+  }
+}
+
+/**
+ * Limpiar contribuciones mock (útil para testing)
+ */
+export function clearMockContributions(): void {
+  localStorage.removeItem(MOCK_CONTRIBUTIONS_KEY)
+  console.log('🗑️ Mock contributions cleared')
 }
 
 /* ───────────────────────────────────────────── */
@@ -119,7 +212,6 @@ function getMockWishlist(slug: string): PublicWishlist {
       'Esta es una wishlist generada automáticamente para desarrollo.',
     ownerName: 'Usuario Demo',
     ownerAvatar: undefined,
-
     product: {
       id: 'prod_mock',
       name: 'Producto de ejemplo',
@@ -131,12 +223,10 @@ function getMockWishlist(slug: string): PublicWishlist {
       marketplace: 'DemoStore',
       available: true,
     },
-
     targetAmount: 250000,
     currentAmount: 90000,
     status: 'active',
     contributorsCount: 3,
-
     contributors: [
       {
         id: 'c1',
@@ -160,7 +250,6 @@ function getMockWishlist(slug: string): PublicWishlist {
         createdAt: now.toISOString(),
       },
     ],
-
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
     expiresAt: eventDate.toISOString(),
