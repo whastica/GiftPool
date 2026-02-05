@@ -8,9 +8,10 @@ type ModalProps = {
   title: string;
   children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  showCloseButton?: boolean; // Nueva propiedad opcional
 };
 
-const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) => {
+const Modal = ({ isOpen, onClose, title, children, size = 'md', showCloseButton = true }: ModalProps) => {
   // Close on ESC key
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -53,12 +54,14 @@ const Modal = ({ isOpen, onClose, title, children, size = 'md' }: ModalProps) =>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
-          >
-            <X size={24} />
-          </button>
+          {showCloseButton && ( // Mostrar botón solo si está habilitado
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition"
+            >
+              <X size={24} />
+            </button>
+          )}
         </div>
 
         {/* Content */}

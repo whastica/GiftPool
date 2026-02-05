@@ -1,48 +1,38 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
+
 // Layouts
 import PublicLayout from '../layout/PublicLayout'
 import AuthLayout from '../layout/AuthLayout'
 import CreateFlowLayout from '../layout/CreateFlowLayout'
+
 // Route Guards
 import PrivateRoute from './PrivateRoute'
 import PublicRoute from './PublicRoute'
+
 // Pages - Public
 import Home from '../pages/Home'
 import WishlistPage from '../pages/PublicWishlistPage'
 import CreateWishlist from '../pages/CreateWishlist'
 import CreateWishlistPage from '../pages/CreateWishlist'
 import NotFound from '../pages/Notfound'
+
 // Pages - Auth
 import Login from '../pages/Login'
 import Register from '../pages/Register'
+
 // Pages - Private
 import Dashboard from '../pages/Dashboard'
 
+// Pages - Contribute (EPIC 6)
+import ContributePage from '../pages/ContributePage'
+import ContributeSuccessPage from '../pages/ContributeSuccessPage'
+
 /**
- * AppRoutes
+ * AppRoutes - ACTUALIZADO CON EPIC 6
  * 
- * Configuración centralizada de todas las rutas de la aplicación.
- * Organizado en cuatro grupos:
- * 
- * 1. Rutas Públicas (con PublicLayout)
- *    - Home
- *    - Ver wishlists compartidas
- * 
- * 2. Rutas de Creación (con CreateFlowLayout - sin footer)
- *    - Crear wishlist (accesible sin login) - DEPRECATED: usar /create
- *    - Crear wishlist (requiere login) - NUEVO: wizard completo
- * 
- * 3. Rutas de Autenticación (sin layout, restringidas si ya está logueado)
- *    - Login
- *    - Register
- * 
- * 4. Rutas Privadas (con AuthLayout, requieren autenticación)
- *    - Dashboard
- *    - Perfil
- * 
- * 5. Rutas Especiales
- *    - 404 NotFound
- *    - Redirects
+ * NUEVAS RUTAS AGREGADAS:
+ * - /contribute/checkout/:contributionId - Página de checkout
+ * - /contribute/success/:contributionId - Página de confirmación
  */
 const AppRoutes = () => {
   return (
@@ -59,12 +49,38 @@ const AppRoutes = () => {
             </PublicRoute>
           }
         />
+        
         {/* Página pública para ver wishlists compartidas */}
         <Route
           path="/w/:slug"
           element={
             <PublicRoute>
               <WishlistPage />
+            </PublicRoute>
+          }
+        />
+        
+        {/* ============================================
+            RUTAS DE CONTRIBUCIÓN (EPIC 6)
+            Públicas - no requieren autenticación
+            ============================================ */}
+        
+        {/* Checkout de contribución */}
+        <Route
+          path="/contribute/checkout/:contributionId"
+          element={
+            <PublicRoute>
+              <ContributePage />
+            </PublicRoute>
+          }
+        />
+        
+        {/* Confirmación de contribución exitosa */}
+        <Route
+          path="/contribute/success/:contributionId"
+          element={
+            <PublicRoute>
+              <ContributeSuccessPage />
             </PublicRoute>
           }
         />
@@ -108,6 +124,7 @@ const AppRoutes = () => {
           </PublicRoute>
         }
       />
+      
       <Route
         path="/register"
         element={
@@ -130,7 +147,7 @@ const AppRoutes = () => {
       >
         <Route path="/dashboard" element={<Dashboard />} />
         
-        {/* Rutas adicionales que puedes crear después */}
+        {/* Rutas adicionales */}
         <Route path="/mis-wishlists" element={<div>Mis Wishlists - TODO</div>} />
         <Route path="/perfil" element={<div>Perfil - TODO</div>} />
         <Route path="/configuracion" element={<div>Configuración - TODO</div>} />

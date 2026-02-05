@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
+
 import type {
   PublicWishlist,
   ContributeFormData,
 } from '../types/publicWishlistTypes'
+
 import { publicWishlistService } from '../services/publicWishlistService'
-import { useContribute } from './useContribute'
+import { useContribute } from '../hooks/useContribute'
 
 export const usePublicWishlist = () => {
   const { slug } = useParams<{ slug: string }>()
@@ -31,40 +33,39 @@ export const usePublicWishlist = () => {
     try {
       const data = await publicWishlistService.getBySlug(slug)
       setWishlist(data)
-      publicWishlistService.trackView(data.id)
-    } catch (err: any) {
+      void publicWishlistService.trackView(data.id)
+    } catch (err: unknown) {
       console.error(err)
-      setError(err.message || 'Error al cargar la wishlist')
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Error al cargar la wishlist'
+      )
     } finally {
       setIsLoading(false)
     }
   }, [slug])
 
   /* -------------------------------------------------------------------------- */
-  /*                       EPIC 6 - CONTRIBUTE WITH REDIRECT                    */
+  /*                          CONTRIBUTE (EPIC 6)                               */
   /* -------------------------------------------------------------------------- */
 
-  // ✅ EPIC 6: Usar useContribute para manejar el flujo completo
   const {
     processContribution,
     isProcessing: isContributing,
     error: contributeError,
   } = useContribute({
-    wishlistId: wishlist?.id || '',
+    wishlistId: wishlist?.id ?? '',
     onSuccess: () => {
-      console.log('✅ Contribution flow started successfully!')
-      // Recargar wishlist después de la contribución
       loadWishlist()
     },
-    onError: (error) => {
-      console.error('❌ Contribution error:', error)
-      setError(error)
+    onError: (err) => {
+      setError(err)
     },
   })
 
   /**
-   * Wrapper para mantener compatibilidad con código existente
-   * Esta función ahora usa el flujo completo de EPIC 6
+   * Wrapper público para contribuir
    */
   const contribute = async (
     data: ContributeFormData,
@@ -76,19 +77,14 @@ export const usePublicWishlist = () => {
     }
 
     try {
-      // ✅ Usar processContribution que maneja todo el flujo
-      const success = await processContribution(data, videoBlob)
-      
-      if (success) {
-        // La redirección ya la maneja useContribute
-        console.log('🎉 Contribution successful, redirecting...')
-      }
-      
-      return success
-      
-    } catch (err: any) {
-      console.error('❌ Error in contribute wrapper:', err)
-      setError(err.message || 'Error al realizar la contribución')
+      return await processContribution(data, videoBlob)
+    } catch (err: unknown) {
+      console.error(err)
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Error al realizar la contribución'
+      )
       return false
     }
   }
@@ -130,6 +126,7 @@ export const usePublicWishlist = () => {
     if (!wishlist?.expiresAt) return 0
     const diff =
       new Date(wishlist.expiresAt).getTime() - Date.now()
+
     return Math.max(
       Math.ceil(diff / (1000 * 60 * 60 * 24)),
       0
