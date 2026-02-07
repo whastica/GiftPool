@@ -1,120 +1,73 @@
 /**
- * Payment Service (EPIC 6)
- * Servicio completo para manejo de pagos y contribuciones
+ * Payment Service (EPIC 6 + EPIC 7)
+ * Servicio modular para manejo de pagos
  */
+
 import api from './api'
-import type {
-  ContributionData as ContributionDataType,
-  ContributionResponse as ContributionResponseType,
-  PaymentMethod as PaymentMethodType,
-} from '../types/contributeTypes'
+import type { ContributionData, ContributionResponse, PaymentMethod } from '../types/contributeTypes'
+import { saveMockContribution } from './mockContributionsManager'
 
-/* -------------------------------------------------------------------------- */
-/* MÉTODOS DE PAGO DISPONIBLES */
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
+/* MÉTODOS DE PAGO                                                            */
+/* ========================================================================== */
 
-/**
- * Obtener métodos de pago disponibles
- */
-export const getAvailablePaymentMethods = (): PaymentMethodType[] => {
-  // En DEV: todos disponibles
-  if (import.meta.env.DEV) {
-    return ['mercadopago', 'paypal']
-  }
-
-  // En PROD: consultar al backend cuáles están activos
+export const getAvailablePaymentMethods = (): PaymentMethod[] => {
   return ['mercadopago', 'paypal']
 }
 
-/* -------------------------------------------------------------------------- */
-/* EPIC 6: MOCK CONTRIBUTIONS STORAGE */
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
+/* INICIAR CONTRIBUCIÓN                                                       */
+/* ========================================================================== */
 
-const MOCK_CONTRIBUTIONS_KEY = 'giftpool_mock_contributions'
+export const initiateContribution = async (data: ContributionData): Promise<ContributionResponse> => {
+  return import.meta.env.DEV ? handleDevMode(data) : handleProdMode(data)
+}
 
 /**
- * Guardar contribución en localStorage
+ * Modo desarrollo - Simulación local
  */
-const saveMockContribution = (wishlistId: string, contribution: {
-  id: string;
-  name: string;
-  amount: number;
-  message: string;
-  isAnonymous: boolean;
-  createdAt: string;
-}): void => {
-  try {
-    const stored = localStorage.getItem(MOCK_CONTRIBUTIONS_KEY)
-    const contributions: Record<string, any[]> = stored ? JSON.parse(stored) : {}
-    
-    if (!contributions[wishlistId]) {
-      contributions[wishlistId] = []
-    }
-    
-    contributions[wishlistId].push(contribution)
-    
-    localStorage.setItem(MOCK_CONTRIBUTIONS_KEY, JSON.stringify(contributions))
-    
-    console.log('✅ Mock contribution saved to localStorage:', contribution)
-    console.log('📦 Total contributions for wishlist:', contributions[wishlistId].length)
-  } catch (error) {
-    console.error('❌ Error saving mock contribution:', error)
+const handleDevMode = async (data: ContributionData): Promise<ContributionResponse> => {
+  console.log('🛠️ DEV MODE: Initiating contribution', data)
+  await delay(1200)
+
+  // Validar
+  const validation = validateBasicData(data)
+  if (!validation.isValid) {
+    return { success: false, error: validation.error }
   }
-};
 
-/* -------------------------------------------------------------------------- */
-/* INICIAR CONTRIBUCIÓN */
-/* -------------------------------------------------------------------------- */
+  // Generar ID único
+  const contributionId = generateContributionId()
 
-/**
- * Iniciar una contribución (crear registro en backend)
- */
-export const initiateContribution = async (
-  data: ContributionDataType
-): Promise<ContributionResponseType> => {
-  if (import.meta.env.DEV) {
-    console.log('🛠️ DEV MODE: Simulating contribution initiation', data);
-
-    // Simular delay de red
-    await delay(1200);
-
-    // Validaciones básicas
-    if (!data.amount || data.amount < 10000) {
-      return {
-        success: false,
-        error: 'El monto mínimo es $10,000',
-      };
-    }
-
-    if (!data.paymentMethod) {
-      return {
-        success: false,
-        error: 'Debes seleccionar un método de pago',
-      };
-    }
-
-    // Generar ID de contribución simulado
-    const contributionId = `CONTRIB-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-
-    // ✅ Guardar contribución en localStorage
-    saveMockContribution(data.wishlistId, {
+  // Guardar contribución (con video si existe)
+  const saved = await saveMockContribution(
+    data.wishlistId,
+    {
       id: contributionId,
       name: data.isAnonymous ? 'Anónimo' : data.name,
       amount: data.amount,
       message: data.message || '',
       isAnonymous: data.isAnonymous,
       createdAt: new Date().toISOString(),
-    });
+    },
+    data.videoBlob 
+  )
 
-    // Simular respuesta exitosa
-    return {
-      success: true,
-      contributionId,
-      paymentUrl: `/contribute/checkout/${contributionId}`,
-    };
+  if (!saved) {
+    return { success: false, error: 'Error al guardar la contribución' }
   }
 
-  // Modo producción
+  return {
+    success: true,
+    contributionId,
+    paymentUrl: `/contribute/checkout/${contributionId}`,
+  }
+}
+
+/**
+ * Modo producción - API real
+ */
+const handleProdMode = async (data: ContributionData): Promise<ContributionResponse> => {
   try {
     const response = await api.post('/contributions/create', {
       wishlistId: data.wishlistId,
@@ -125,49 +78,39 @@ export const initiateContribution = async (
       isAnonymous: data.isAnonymous,
       includeVideo: data.includeVideo,
       paymentMethod: data.paymentMethod,
-    });
+    })
 
-    return response.data;
+    return response.data
   } catch (error: any) {
-    console.error('Error initiating contribution:', error);
-
+    console.error('Error initiating contribution:', error)
     return {
       success: false,
       error: error.response?.data?.message || 'Error al procesar la contribución',
-    };
+    }
   }
 }
 
-/* -------------------------------------------------------------------------- */
-/* CHECKOUT */
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
+/* CHECKOUT                                                                   */
+/* ========================================================================== */
 
 export interface CheckoutResponse {
   checkoutUrl: string
 }
 
-/**
- * Obtener URL de checkout para una contribución
- */
-export const getCheckoutUrl = async (
-  contributionId: string
-): Promise<CheckoutResponse> => {
+export const getCheckoutUrl = async (contributionId: string): Promise<CheckoutResponse> => {
   if (import.meta.env.DEV) {
-    console.log('🧪 DEV MODE: Simulating checkout redirect', contributionId)
     await delay(800)
-
-    return {
-      checkoutUrl: `/contribute/success/${contributionId}`,
-    }
+    return { checkoutUrl: `/contribute/success/${contributionId}` }
   }
 
   const response = await api.get(`/payments/checkout/${contributionId}`)
   return response.data
 }
 
-/* -------------------------------------------------------------------------- */
-/* CONFIRMAR PAGO */
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
+/* CONFIRMAR PAGO                                                             */
+/* ========================================================================== */
 
 export interface ConfirmPaymentResponse {
   contributionId: string
@@ -177,16 +120,9 @@ export interface ConfirmPaymentResponse {
   paidAt: string
 }
 
-/**
- * Confirmar que un pago fue completado
- */
-export const confirmPayment = async (
-  contributionId: string
-): Promise<ConfirmPaymentResponse | null> => {
+export const confirmPayment = async (contributionId: string): Promise<ConfirmPaymentResponse | null> => {
   if (import.meta.env.DEV) {
-    console.log('🧪 DEV MODE: Simulating payment confirmation', contributionId)
     await delay(800)
-
     return {
       contributionId,
       amount: 50000,
@@ -200,55 +136,45 @@ export const confirmPayment = async (
   return response.data
 }
 
-/* -------------------------------------------------------------------------- */
-/* UTILIDADES */
-/* -------------------------------------------------------------------------- */
+/* ========================================================================== */
+/* VALIDACIONES                                                               */
+/* ========================================================================== */
 
-/**
- * Helper para simular delays en DEV
- */
-const delay = (ms: number): Promise<void> => {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-/**
- * Validar datos de contribución
- */
 export const validateContributionData = (
-  data: Partial<ContributionDataType>
+  data: Partial<ContributionData>
 ): { isValid: boolean; errors: Record<string, string> } => {
   const errors: Record<string, string> = {}
 
-  if (!data.amount || data.amount < 10000) {
-    errors.amount = 'El monto mínimo es $10,000'
-  }
+  if (!data.amount || data.amount < 10000) errors.amount = 'El monto mínimo es $10,000'
+  if (!data.isAnonymous && !data.name?.trim()) errors.name = 'El nombre es obligatorio'
+  if (data.email && !isValidEmail(data.email)) errors.email = 'Email inválido'
+  if (data.message && data.message.length > 300) errors.message = 'Máximo 300 caracteres'
+  if (!data.paymentMethod) errors.paymentMethod = 'Selecciona un método de pago'
 
-  if (!data.isAnonymous && !data.name?.trim()) {
-    errors.name = 'El nombre es obligatorio'
-  }
-
-  if (data.email && !isValidEmail(data.email)) {
-    errors.email = 'Email inválido'
-  }
-
-  if (data.message && data.message.length > 300) {
-    errors.message = 'El mensaje no puede exceder 300 caracteres'
-  }
-
-  if (!data.paymentMethod) {
-    errors.paymentMethod = 'Debes seleccionar un método de pago'
-  }
-
-  return {
-    isValid: Object.keys(errors).length === 0,
-    errors,
-  }
+  return { isValid: Object.keys(errors).length === 0, errors }
 }
 
 /**
- * Validar email
+ * Validación básica para modo dev
  */
-const isValidEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-  return emailRegex.test(email)
+const validateBasicData = (data: ContributionData): { isValid: boolean; error?: string } => {
+  if (!data.amount || data.amount < 10000) {
+    return { isValid: false, error: 'El monto mínimo es $10,000' }
+  }
+  if (!data.paymentMethod) {
+    return { isValid: false, error: 'Debes seleccionar un método de pago' }
+  }
+  return { isValid: true }
+}
+
+/* ========================================================================== */
+/* UTILIDADES                                                                 */
+/* ========================================================================== */
+
+const delay = (ms: number): Promise<void> => new Promise(resolve => setTimeout(resolve, ms))
+
+const isValidEmail = (email: string): boolean => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
+
+const generateContributionId = (): string => {
+  return `CONTRIB-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 }

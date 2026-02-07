@@ -9,14 +9,14 @@ export const mockWishlist: PublicWishlist = {
   eventDate: '2026-02-14',
   status: 'active',
   currentAmount: 50000,
-  targetAmount: 100000,
+  targetAmount: 150000,
   contributorsCount: 2,
 
   product: {
     id: 'prod_mock_001',
     name: 'Cámara Instantánea',
     description: 'Cámara instantánea ideal para capturar momentos especiales',
-    price: 100000,
+    price: 150000,
     image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=500&h=500&fit=crop',
     url: 'https://example.com/camera',
     marketplace: 'Example Store',
