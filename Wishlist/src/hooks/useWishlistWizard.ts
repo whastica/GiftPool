@@ -1,9 +1,16 @@
+/**
+ * Hook personalizado para manejar el flujo del wizard de creación de wishlist
+ * ACTUALIZADO: Ahora guarda en localStorage y retorna wishlist completa
+ */
+
 import { useState, useCallback } from 'react'
+import { useAuth } from './useAuth'
 import type {
   WizardStep,
   WizardState,
   WishlistFormData,
   Product,
+  Wishlist,
 } from '../types/wishlistTypes'
 import { wishlistService } from '../services/wishlistService'
 
@@ -18,6 +25,8 @@ const INITIAL_FORM_DATA: WishlistFormData = {
  * Hook personalizado para manejar el flujo del wizard de creación de wishlist
  */
 export const useWishlistWizard = () => {
+  const { user } = useAuth()
+
   const [state, setState] = useState<WizardState>({
     currentStep: 1,
     formData: INITIAL_FORM_DATA,
@@ -25,6 +34,10 @@ export const useWishlistWizard = () => {
     isLoading: false,
     error: null,
   })
+
+  // ============================================
+  // FORM DATA MANAGEMENT
+  // ============================================
 
   /**
    * Actualizar datos del formulario
@@ -36,6 +49,10 @@ export const useWishlistWizard = () => {
       error: null,
     }))
   }, [])
+
+  // ============================================
+  // NAVIGATION
+  // ============================================
 
   /**
    * Navegar a un paso específico
@@ -54,7 +71,7 @@ export const useWishlistWizard = () => {
   const nextStep = useCallback(() => {
     setState((prev) => ({
       ...prev,
-      currentStep: (Math.min(prev.currentStep + 1, 3) as WizardStep),
+      currentStep: Math.min(prev.currentStep + 1, 3) as WizardStep,
       error: null,
     }))
   }, [])
@@ -65,10 +82,14 @@ export const useWishlistWizard = () => {
   const previousStep = useCallback(() => {
     setState((prev) => ({
       ...prev,
-      currentStep: (Math.max(prev.currentStep - 1, 1) as WizardStep),
+      currentStep: Math.max(prev.currentStep - 1, 1) as WizardStep,
       error: null,
     }))
   }, [])
+
+  // ============================================
+  // PRODUCT LOADING (STEP 1)
+  // ============================================
 
   /**
    * Validar y cargar producto desde URL
@@ -124,6 +145,10 @@ export const useWishlistWizard = () => {
     }
   }, [state.formData])
 
+  // ============================================
+  // VALIDATION (STEP 2)
+  // ============================================
+
   /**
    * Validar datos del evento antes de continuar
    */
@@ -170,18 +195,43 @@ export const useWishlistWizard = () => {
     return true
   }, [state.formData])
 
+  // ============================================
+  // WISHLIST CREATION (STEP 2 → 3)
+  // ============================================
+
   /**
    * Crear wishlist
+   * ACTUALIZADO: Ahora guarda en localStorage vía el servicio
    */
-  const createWishlist = useCallback(async () => {
+  const createWishlist = useCallback(async (): Promise<Wishlist | null> => {
     if (!validateEventData()) {
+      return null
+    }
+
+    if (!user) {
+      setState((prev) => ({
+        ...prev,
+        error: 'Debes iniciar sesión para crear una wishlist',
+      }))
+      return null
+    }
+
+    if (!state.productData) {
+      setState((prev) => ({
+        ...prev,
+        error: 'No hay información del producto',
+      }))
       return null
     }
 
     setState((prev) => ({ ...prev, isLoading: true, error: null }))
 
     try {
-      const result = await wishlistService.createWishlist(state.formData)
+      const result = await wishlistService.createWishlist(
+        state.formData,
+        user.id,
+        state.productData
+      )
 
       if (!result.success) {
         setState((prev) => ({
@@ -199,7 +249,7 @@ export const useWishlistWizard = () => {
         error: null,
       }))
 
-      return result.wishlist
+      return result.wishlist!
     } catch (error) {
       setState((prev) => ({
         ...prev,
@@ -208,7 +258,11 @@ export const useWishlistWizard = () => {
       }))
       return null
     }
-  }, [state.formData, validateEventData])
+  }, [state.formData, state.productData, validateEventData, user])
+
+  // ============================================
+  // RESET
+  // ============================================
 
   /**
    * Reiniciar wizard
@@ -222,6 +276,10 @@ export const useWishlistWizard = () => {
       error: null,
     })
   }, [])
+
+  // ============================================
+  // RETURN
+  // ============================================
 
   return {
     // Estado
@@ -242,3 +300,5 @@ export const useWishlistWizard = () => {
     resetWizard,
   }
 }
+
+export default useWishlistWizard
