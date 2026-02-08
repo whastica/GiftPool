@@ -1,71 +1,91 @@
 /**
- * Types extendidos para wishlist pública (EPIC 5)
+ * Types para wishlists públicas
+ * Extiende de los tipos base de wishlist
  */
 
-export type WishlistStatus = 'active' | 'completed' | 'expired' | 'cancelled'
+import type { Product, Contributor, WishlistStatus } from './wishlistTypes'
 
-export interface PublicProduct {
-  id: string
-  name: string
-  description?: string
-  price: number
-  image: string
-  url: string
-  marketplace: string
-  available: boolean
-}
-
-export interface PublicContributor {
-  id: string
-  name: string
-  amount: number
-  message?: string
-  videoUrl?: string
-  avatar?: string
-  isAnonymous: boolean
-  createdAt: string
-}
+// ============================================
+// PUBLIC WISHLIST
+// ============================================
 
 export interface PublicWishlist {
   id: string
   slug: string
   title: string
-  eventDate: string
   message: string
-  ownerName: string
-  ownerAvatar?: string
-  product: PublicProduct
+  eventDate: string
+  product: Product
   targetAmount: number
   currentAmount: number
   status: WishlistStatus
-  contributors: PublicContributor[]
+  contributors: Contributor[]
   contributorsCount: number
   createdAt: string
-  updatedAt: string
   expiresAt?: string
-  completedAt?: string
+  
+  // Campos adicionales para vista pública
+  ownerName: string
+  views: number
 }
+
+// ============================================
+// CONTRIBUTION
+// ============================================
 
 export interface ContributeFormData {
-  amount: number
   name: string
   email?: string
+  amount: number
   message?: string
   isAnonymous: boolean
-  includeVideo: boolean
+  recordVideo: boolean
 }
 
-export interface WishlistMetaTags {
+export interface ContributionResult {
+  success: boolean
+  contributionId?: string
+  error?: string
+}
+
+// ============================================
+// SHARE
+// ============================================
+
+export interface ShareData {
+  url: string
+  title: string
+  description: string
+  image?: string
+}
+
+// ============================================
+// META TAGS
+// ============================================
+
+export interface MetaTags {
   title: string
   description: string
   image: string
   url: string
+  type: 'website'
   siteName: string
-  type: string
+  locale: string
 }
 
-export interface ShareOptions {
+export interface StructuredData {
+  '@context': string
+  '@type': string
+  name: string
+  description: string
+  image: string
   url: string
-  title: string
-  text: string
+  startDate: string
+  endDate?: string
+  offers?: {
+    '@type': string
+    price: string
+    priceCurrency: string
+    availability: string
+  }
 }

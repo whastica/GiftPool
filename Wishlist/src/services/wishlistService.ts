@@ -53,18 +53,25 @@ const validateProductUrl = async (url: string): Promise<ProductValidation> => {
 
     // Si falla el backend, usar datos de prueba en desarrollo
     if (import.meta.env.DEV) {
+      // Importar productos mock
+      const {
+        detectCategoryFromUrl,
+        getMockProductByCategory,
+        mockProductToProduct,
+      } = await import('./mockProducts')
+
+      // Detectar categoría desde la URL
+      const category = detectCategoryFromUrl(url)
+      
+      // Obtener producto aleatorio de esa categoría
+      const mockProduct = getMockProductByCategory(category)
+      
+      // Convertir a formato Product
+      const product = mockProductToProduct(mockProduct, url)
+
       return {
         isValid: true,
-        product: {
-          name: 'Producto de ejemplo - Audífonos Bluetooth',
-          price: 899900,
-          image:
-            'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&h=400&fit=crop',
-          url: url,
-          available: true,
-          marketplace: 'mercadolibre',
-          description: 'Audífonos inalámbricos con cancelación de ruido',
-        },
+        product: product,
       }
     }
 
