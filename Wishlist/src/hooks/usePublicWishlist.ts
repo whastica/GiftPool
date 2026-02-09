@@ -1,50 +1,35 @@
-import { useState, useEffect, useCallback } from 'react'
+/**
+ * usePublicWishlist Hook
+ * ACTUALIZADO: Ahora usa React Query para gestión de estado
+ */
+
+import { useCallback, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
-import type {
-  PublicWishlist,
-  ContributeFormData,
-} from '../types/publicWishlistTypes'
-import { publicWishlistService } from '../services/publicWishlistService'
+import { usePublicWishlistQuery } from './queries/usePublicWishlistQuery'
 import { useContribute } from './useContribute'
+import type { ContributeFormData } from '../types/publicWishlistTypes'
 
 export const usePublicWishlist = () => {
   const { slug } = useParams<{ slug: string }>()
 
-  const [wishlist, setWishlist] = useState<PublicWishlist | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  // ============================================
+  // REACT QUERY - WISHLIST
+  // ============================================
 
-  /* -------------------------------------------------------------------------- */
-  /*                               LOAD WISHLIST                                */
-  /* -------------------------------------------------------------------------- */
+  const {
+    data: wishlist,
+    isLoading,
+    error: queryError,
+    refetch,
+  } = usePublicWishlistQuery({
+    slug,
+    enabled: !!slug,
+  })
 
-  const loadWishlist = useCallback(async () => {
-    if (!slug) {
-      setError('No se proporcionó un slug válido')
-      setIsLoading(false)
-      return
-    }
+  // ============================================
+  // CONTRIBUTE HOOK
+  // ============================================
 
-    setIsLoading(true)
-    setError(null)
-
-    try {
-      const data = await publicWishlistService.getBySlug(slug)
-      setWishlist(data)
-      publicWishlistService.trackView(data.id)
-    } catch (err: any) {
-      console.error(err)
-      setError(err.message || 'Error al cargar la wishlist')
-    } finally {
-      setIsLoading(false)
-    }
-  }, [slug])
-
-  /* -------------------------------------------------------------------------- */
-  /*                       EPIC 6 - CONTRIBUTE WITH REDIRECT                    */
-  /* -------------------------------------------------------------------------- */
-
-  // ✅ EPIC 6: Usar useContribute para manejar el flujo completo
   const {
     processContribution,
     isProcessing: isContributing,
@@ -54,50 +39,48 @@ export const usePublicWishlist = () => {
     onSuccess: () => {
       console.log('✅ Contribution flow started successfully!')
       // Recargar wishlist después de la contribución
-      loadWishlist()
+      refetch()
     },
     onError: (error) => {
       console.error('❌ Contribution error:', error)
-      setError(error)
     },
   })
 
+  // ============================================
+  // CONTRIBUTE WRAPPER
+  // ============================================
+
   /**
    * Wrapper para mantener compatibilidad con código existente
-   * Esta función ahora usa el flujo completo de EPIC 6
    */
-  const contribute = async (
-    data: ContributeFormData,
-    videoBlob?: Blob
-  ): Promise<boolean> => {
-    if (!wishlist) {
-      setError('No se encontró la wishlist')
-      return false
-    }
-
-    try {
-      // ✅ Usar processContribution que maneja todo el flujo
-      const success = await processContribution(data, videoBlob)
-      
-      if (success) {
-        // La redirección ya la maneja useContribute
-        console.log('🎉 Contribution successful, redirecting...')
+  const contribute = useCallback(
+    async (data: ContributeFormData, videoBlob?: Blob): Promise<boolean> => {
+      if (!wishlist) {
+        console.error('No wishlist found')
+        return false
       }
-      
-      return success
-      
-    } catch (err: any) {
-      console.error('❌ Error in contribute wrapper:', err)
-      setError(err.message || 'Error al realizar la contribución')
-      return false
-    }
-  }
 
-  /* -------------------------------------------------------------------------- */
-  /*                             COMPUTED HELPERS                               */
-  /* -------------------------------------------------------------------------- */
+      try {
+        const success = await processContribution(data, videoBlob)
+        
+        if (success) {
+          console.log('🎉 Contribution successful, redirecting...')
+        }
+        
+        return success
+      } catch (err: any) {
+        console.error('❌ Error in contribute wrapper:', err)
+        return false
+      }
+    },
+    [wishlist, processContribution]
+  )
 
-  const progress = useCallback(() => {
+  // ============================================
+  // COMPUTED HELPERS
+  // ============================================
+
+  const progress = useMemo(() => {
     if (!wishlist) return 0
     return Math.min(
       (wishlist.currentAmount / wishlist.targetAmount) * 100,
@@ -105,20 +88,17 @@ export const usePublicWishlist = () => {
     )
   }, [wishlist])
 
-  const remaining = useCallback(() => {
+  const remaining = useMemo(() => {
     if (!wishlist) return 0
-    return Math.max(
-      wishlist.targetAmount - wishlist.currentAmount,
-      0
-    )
+    return Math.max(wishlist.targetAmount - wishlist.currentAmount, 0)
   }, [wishlist])
 
-  const isExpired = useCallback(() => {
+  const isExpired = useMemo(() => {
     if (!wishlist?.expiresAt) return false
     return new Date(wishlist.expiresAt) < new Date()
   }, [wishlist])
 
-  const isCompleted = useCallback(() => {
+  const isCompleted = useMemo(() => {
     if (!wishlist) return false
     return (
       wishlist.status === 'completed' ||
@@ -126,33 +106,35 @@ export const usePublicWishlist = () => {
     )
   }, [wishlist])
 
-  const daysRemaining = useCallback(() => {
+  const daysRemaining = useMemo(() => {
     if (!wishlist?.expiresAt) return 0
-    const diff =
-      new Date(wishlist.expiresAt).getTime() - Date.now()
-    return Math.max(
-      Math.ceil(diff / (1000 * 60 * 60 * 24)),
-      0
-    )
+    const diff = new Date(wishlist.expiresAt).getTime() - Date.now()
+    return Math.max(Math.ceil(diff / (1000 * 60 * 60 * 24)), 0)
   }, [wishlist])
 
-  useEffect(() => {
-    loadWishlist()
-  }, [loadWishlist])
+  // ============================================
+  // ERROR HANDLING
+  // ============================================
+
+  const error = queryError?.message || contributeError || null
+
+  // ============================================
+  // RETURN
+  // ============================================
 
   return {
-    wishlist,
+    wishlist: wishlist || null,
     isLoading,
-    error: error || contributeError,
+    error,
     isContributing,
-
     contribute,
-    reload: loadWishlist,
-
-    progress: progress(),
-    remaining: remaining(),
-    isExpired: isExpired(),
-    isCompleted: isCompleted(),
-    daysRemaining: daysRemaining(),
+    reload: refetch,
+    progress,
+    remaining,
+    isExpired,
+    isCompleted,
+    daysRemaining,
   }
 }
+
+export default usePublicWishlist
