@@ -1,6 +1,6 @@
 /**
  * Dashboard del Usuario
- * Muestra todas las wishlists con filtros, búsqueda y estadísticas
+ * ACTUALIZADO: Integrado con React Query y ErrorState
  */
 
 import { useNavigate } from 'react-router-dom'
@@ -13,11 +13,7 @@ import WishlistFilters from '../components/dashboard/WishlistFilters'
 import WishlistCard from '../components/dashboard/WishlistCard'
 import EmptyState from '../components/dashboard/EmptyState'
 import WishlistSkeleton from '../components/dashboard/WishlistSkeleton'
-import {
-  filterWishlistsByStatus,
-  getWishlistStatus,
-  isWishlistExpired,
-} from '../utils/wishlistUtils'
+import ErrorState from '../components/error/ErrorState'
 
 const Dashboard = () => {
   const navigate = useNavigate()
@@ -61,9 +57,7 @@ const Dashboard = () => {
     
     if (confirmed) {
       const success = await deleteWishlist(id)
-      if (!success) {
-        alert('No se pudo eliminar la wishlist. Intenta de nuevo.')
-      }
+      // El toast ya se muestra en la mutation
     }
   }
 
@@ -128,26 +122,16 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <div className="container mx-auto px-6 py-12">
-        {/* Error Message */}
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start">
-            <div className="flex-shrink-0">
-              <svg
-                className="w-5 h-5 text-red-600 mt-0.5"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <h3 className="text-sm font-medium text-red-800">Error</h3>
-              <p className="text-sm text-red-700 mt-1">{error}</p>
-            </div>
+        {/* ✅ EPIC 9: Error State Mejorado */}
+        {error && !isLoading && (
+          <div className="mb-6">
+            <ErrorState
+              error={error}
+              onRetry={refreshWishlists}
+              isRetrying={isRefreshing}
+              title="Error al cargar wishlists"
+              compact={true}
+            />
           </div>
         )}
 
@@ -160,24 +144,29 @@ const Dashboard = () => {
           />
         )}
 
-        {/* Loading State */}
+        {/* ✅ EPIC 9: Loading State */}
         {isLoading && <WishlistSkeleton count={3} />}
 
-        {/* Wishlists Grid */}
-        {!isLoading && !isEmpty && (
-          <div className="space-y-6">
-            {wishlists.map((wishlist) => (
-              <WishlistCard
+        {/* ✅ EPIC 9: Wishlists Grid - Solo si no hay error ni loading */}
+        {!isLoading && !error && !isEmpty && (
+          <div className="space-y-6 animate-fade-in-up">
+            {wishlists.map((wishlist, index) => (
+              <div
                 key={wishlist.id}
-                wishlist={wishlist}
-                onDelete={handleDeleteWishlist}
-              />
+                style={{ animationDelay: `${index * 0.1}s` }}
+                className="animate-fade-in-up"
+              >
+                <WishlistCard
+                  wishlist={wishlist}
+                  onDelete={handleDeleteWishlist}
+                />
+              </div>
             ))}
           </div>
         )}
 
-        {/* Empty State */}
-        {!isLoading && isEmpty && (
+        {/* ✅ EPIC 9: Empty State - Solo si no hay error ni loading */}
+        {!isLoading && !error && isEmpty && (
           <EmptyState
             filter={activeFilter}
             searchTerm={searchTerm}
