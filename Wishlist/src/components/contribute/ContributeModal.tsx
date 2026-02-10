@@ -12,17 +12,13 @@ import AmountSelector from './AmountSelector'
 import PaymentMethodSelector from './PaymentMethodSelector'
 import VideoRecorder from './VideoRecorder'
 import ContributeSummary from './ContributeSummary'
-import type {
-  ContributeFormData,
-  ContributeStep,
-  PaymentMethod,
-} from '../../types/contributeTypes'
+import type { ContributionData, PaymentMethod } from '../../types/contributeTypes'
 import { getAvailablePaymentMethods } from '../../services/paymentService'
 
 interface ContributeModalProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: ContributeFormData, videoBlob?: Blob) => Promise<boolean>
+  onSubmit: (data: ContributionData, videoBlob?: Blob) => Promise<boolean>
   targetAmount: number
   currentAmount: number
   isLoading?: boolean
@@ -37,14 +33,15 @@ const ContributeModal = ({
   isLoading = false,
 }: ContributeModalProps) => {
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
-  const [formData, setFormData] = useState<ContributeFormData>({
+  const [formData, setFormData] = useState<ContributionData>({
+    wishlistId: '',
     amount: 0,
     name: '',
     email: '',
     message: '',
     isAnonymous: false,
     includeVideo: false,
-    paymentMethod: undefined,
+    paymentMethod: undefined as PaymentMethod | undefined,
   })
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null)
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -54,7 +51,7 @@ const ContributeModal = ({
   const availableMethods = getAvailablePaymentMethods()
 
   /**
-   * Manejar cambios en formulario
+   * Manejar cambios genéricos
    */
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -67,7 +64,6 @@ const ContributeModal = ({
       [name]: type === 'checkbox' ? checked : value,
     }))
 
-    // Limpiar error
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }))
     }
@@ -79,7 +75,6 @@ const ContributeModal = ({
   const validateStep = (): boolean => {
     const newErrors: Record<string, string> = {}
 
-    // Step 1: Monto y datos básicos
     if (step === 1) {
       if (!formData.amount || formData.amount < minAmount) {
         newErrors.amount = `El monto mínimo es $${minAmount.toLocaleString()}`
@@ -95,11 +90,8 @@ const ContributeModal = ({
       }
     }
 
-    // Step 2: Método de pago
-    if (step === 2) {
-      if (!formData.paymentMethod) {
-        newErrors.paymentMethod = 'Selecciona un método de pago'
-      }
+    if (step === 2 && !formData.paymentMethod) {
+      newErrors.paymentMethod = 'Selecciona un método de pago'
     }
 
     setErrors(newErrors)
@@ -127,9 +119,9 @@ const ContributeModal = ({
   }
 
   /**
-   * Manejar video listo
+   * Video listo
    */
-  const handleVideoReady = (blob: Blob, url: string) => {
+  const handleVideoReady = (blob: Blob) => {
     setVideoBlob(blob)
     setFormData((prev) => ({ ...prev, includeVideo: true }))
     handleNext()
@@ -149,11 +141,11 @@ const ContributeModal = ({
    */
   const handleSubmit = async () => {
     const success = await onSubmit(formData, videoBlob || undefined)
-    
+
     if (success) {
-      // Reset
       setStep(1)
       setFormData({
+        wishlistId: '',
         amount: 0,
         name: '',
         email: '',
@@ -168,14 +160,13 @@ const ContributeModal = ({
   }
 
   /**
-   * Renderizar contenido del paso actual
+   * Renderizar contenido del paso
    */
   const renderStepContent = () => {
     switch (step) {
       case 1:
         return (
           <div className="space-y-6">
-            {/* Amount Selection */}
             <AmountSelector
               value={formData.amount}
               onChange={(amount) =>
@@ -186,7 +177,6 @@ const ContributeModal = ({
               error={errors.amount}
             />
 
-            {/* Anonymous Toggle */}
             <div className="bg-purple-50 border-2 border-purple-200 rounded-xl p-4">
               <label className="flex items-start cursor-pointer">
                 <input
@@ -207,7 +197,6 @@ const ContributeModal = ({
               </label>
             </div>
 
-            {/* Name */}
             {!formData.isAnonymous && (
               <Input
                 type="text"
@@ -215,37 +204,26 @@ const ContributeModal = ({
                 value={formData.name}
                 onChange={handleChange}
                 label="Tu nombre"
-                placeholder="Ej: Carlos Rodríguez"
                 error={errors.name}
-                maxLength={100}
               />
             )}
 
-            {/* Email */}
             <Input
               type="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
               label="Email (opcional)"
-              placeholder="tu@email.com"
-              helperText="Para enviarte confirmación de tu aporte"
             />
 
-            {/* Message */}
             <Textarea
               name="message"
               value={formData.message}
               onChange={handleChange}
               label="Mensaje (opcional)"
-              placeholder="Deja un mensaje especial..."
-              rows={3}
               error={errors.message}
               maxLength={300}
             />
-            <p className="text-xs text-gray-500 -mt-4">
-              {formData.message?.length ?? 0}/300 caracteres
-            </p>
           </div>
         )
 
@@ -253,10 +231,12 @@ const ContributeModal = ({
         return (
           <PaymentMethodSelector
             value={formData.paymentMethod}
-            onChange={(method: PaymentMethod) =>
-              setFormData((prev) => ({ ...prev, paymentMethod: method }))
-            }
             availableMethods={availableMethods}
+            error={errors.paymentMethod}  
+            onChange={(method: PaymentMethod) => {
+              setFormData((prev) => ({ ...prev, paymentMethod: method }))
+              setErrors((prev) => ({ ...prev, paymentMethod: '' })) // ✅ limpia error
+            }}
           />
         )
 
@@ -281,77 +261,23 @@ const ContributeModal = ({
     }
   }
 
-  /**
-   * Obtener título del paso
-   */
-  const getStepTitle = () => {
-    switch (step) {
-      case 1:
-        return '💝 Detalles de tu aporte'
-      case 2:
-        return '💳 Método de pago'
-      case 3:
-        return '🎥 Video-mensaje (opcional)'
-      case 4:
-        return '✅ Confirmar aporte'
-      default:
-        return ''
-    }
-  }
-
   return (
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={getStepTitle()}
+      title="Contribuir"
       size="lg"
       showCloseButton={false}
     >
-      {/* Progress Indicator */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-2">
-          {[1, 2, 3, 4].map((stepNum) => (
-            <div
-              key={stepNum}
-              className={`
-                flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm
-                transition-all duration-300
-                ${
-                  step >= stepNum
-                    ? 'bg-gradient-to-br from-primary-600 to-secondary-600 text-white scale-110'
-                    : 'bg-gray-200 text-gray-500'
-                }
-              `}
-            >
-              {stepNum}
-            </div>
-          ))}
-        </div>
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-gradient-to-r from-primary-600 to-secondary-600 transition-all duration-500 ease-out"
-            style={{ width: `${(step / 4) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Step Content */}
       <div className="mb-8 min-h-[400px]">
         {renderStepContent()}
       </div>
 
-      {/* Actions */}
       <div className="flex gap-3 pt-6 border-t-2 border-gray-200">
-        {/* Close Button */}
-        <Button
-          onClick={onClose}
-          variant="secondary"
-          className="flex-shrink-0"
-        >
+        <Button onClick={onClose} variant="secondary">
           <X className="w-5 h-5" />
         </Button>
 
-        {/* Back Button */}
         {step > 1 && step < 4 && (
           <Button onClick={handleBack} variant="secondary" className="flex-1">
             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -359,7 +285,6 @@ const ContributeModal = ({
           </Button>
         )}
 
-        {/* Next/Submit Button */}
         {step < 3 && (
           <Button onClick={handleNext} className="flex-1">
             Continuar
@@ -368,15 +293,9 @@ const ContributeModal = ({
         )}
 
         {step === 4 && (
-          <Button
-            onClick={handleSubmit}
-            loading={isLoading}
-            disabled={isLoading}
-            className="flex-1"
-            size="lg"
-          >
+          <Button onClick={handleSubmit} loading={isLoading} className="flex-1">
             <Heart className="w-5 h-5 mr-2" />
-            {isLoading ? 'Procesando...' : 'Ir al pago'}
+            Ir al pago
           </Button>
         )}
       </div>

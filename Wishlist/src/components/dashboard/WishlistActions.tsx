@@ -1,8 +1,3 @@
-/**
- * Acciones rápidas para wishlists
- * Botones para ver, copiar, compartir y eliminar
- */
-
 import { useState } from 'react'
 import { ExternalLink, Copy, Share2, Video, Trash2, Check } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
@@ -42,7 +37,7 @@ const WishlistActions = ({ wishlist, onDelete }: WishlistActionsProps) => {
         variant="secondary"
         size="sm"
         fullWidth
-        onClick={() => navigate(`/w/${wishlist.slug}`)}
+        onClick={() => navigate(`/w/${wishlist.slug}`)} // ✅ FIX: Paréntesis
       >
         <ExternalLink className="w-4 h-4 mr-2" />
         Ver wishlist
@@ -69,13 +64,12 @@ const WishlistActions = ({ wishlist, onDelete }: WishlistActionsProps) => {
         )}
       </Button>
 
-      {/* Compartir WhatsApp */}
+      {/* Compartir WhatsApp - ✅ YA TIENE COLOR VERDE */}
       <Button
-        variant="outline"
+        variant="success"
         size="sm"
         fullWidth
         onClick={handleShare}
-        className="bg-green-500 text-white border-green-500 hover:bg-green-600"
       >
         <Share2 className="w-4 h-4 mr-2" />
         Compartir
@@ -88,7 +82,7 @@ const WishlistActions = ({ wishlist, onDelete }: WishlistActionsProps) => {
           size="sm"
           fullWidth
           className="text-purple-600 hover:bg-purple-50"
-          onClick={() => navigate(`/w/${wishlist.slug}#videos`)}
+          onClick={() => navigate(`/w/${wishlist.slug}#videos`)} // ✅ FIX: Paréntesis
         >
           <Video className="w-4 h-4 mr-2" />
           Ver videos

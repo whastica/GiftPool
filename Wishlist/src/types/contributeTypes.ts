@@ -27,7 +27,7 @@ export interface ContributionData {
   message?: string;
   isAnonymous: boolean;
   includeVideo?: boolean;
-  paymentMethod: PaymentMethod;
+  paymentMethod?: PaymentMethod; // Made optional
   videoBlob?: Blob;
 }
 
