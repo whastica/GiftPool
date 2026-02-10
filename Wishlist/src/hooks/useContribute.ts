@@ -1,14 +1,3 @@
-/**
- * useContribute Hook (EPIC 6) - CORREGIDO
- * Hook personalizado para manejar el flujo de contribución
- * 
- * FIXES:
- * - ✅ Sintaxis corregida (backticks → paréntesis)
- * - ✅ Guarda contribuciones en localStorage
- * - ✅ Invalida queries de React Query
- * - ✅ Tipo correcto: ContributionData
- */
-
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'

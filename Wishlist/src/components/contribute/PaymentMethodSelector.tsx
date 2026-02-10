@@ -1,6 +1,6 @@
 /**
  * PaymentMethodSelector Component (EPIC 6)
- * Selector de método de pago con diseño distintivo para cada opción
+ * Selector de método de pago con manejo de error externo
  */
 
 import { CreditCard, Shield, Smartphone } from 'lucide-react'
@@ -10,14 +10,15 @@ interface PaymentMethodSelectorProps {
   value: PaymentMethod | undefined
   onChange: (method: PaymentMethod) => void
   availableMethods?: PaymentMethod[]
+  error?: string
 }
 
 const PaymentMethodSelector = ({
   value,
   onChange,
   availableMethods = ['mercadopago', 'paypal'],
+  error,
 }: PaymentMethodSelectorProps) => {
-  // Configuración visual de cada método
   const paymentMethods = [
     {
       id: 'mercadopago' as PaymentMethod,
@@ -68,116 +69,64 @@ const PaymentMethodSelector = ({
         </p>
       </div>
 
-      {/* Payment Methods Grid */}
+      {/* Methods */}
       <div className="grid gap-4">
         {paymentMethods.map((method) => {
           const isSelected = value === method.id
-          const Icon = method.icon
           const isDisabled = method.comingSoon
+          const Icon = method.icon
 
           return (
             <button
               key={method.id}
               type="button"
-              onClick={() => !isDisabled && onChange(method.id)}
               disabled={isDisabled}
+              onClick={() => {
+                if (!isDisabled) {
+                  onChange(method.id)
+                }
+              }}
               className={`
-                relative group
-                border-3 rounded-2xl p-5
-                transition-all duration-300
+                relative border-3 rounded-2xl p-5 transition-all duration-300
                 ${
                   isSelected
-                    ? `bg-gradient-to-br ${method.gradient} border-transparent shadow-2xl shadow-${method.gradient.split('-')[1]}-300 scale-105`
+                    ? `bg-gradient-to-br ${method.gradient} border-transparent shadow-2xl scale-105`
                     : isDisabled
                     ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
-                    : `${method.bgLight} ${method.borderLight} hover:shadow-xl hover:scale-102 active:scale-98`
+                    : `${method.bgLight} ${method.borderLight} hover:shadow-xl`
                 }
               `}
             >
-              {/* Popular Badge */}
-              {method.popular && !isDisabled && (
-                <div className="absolute -top-3 -right-3 bg-gradient-to-r from-amber-400 to-orange-400 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg animate-pulse">
-                  ⚡ MÁS USADO
-                </div>
-              )}
-
-              {/* Coming Soon Badge */}
-              {isDisabled && (
-                <div className="absolute -top-3 -right-3 bg-gray-400 text-white text-xs font-black px-3 py-1 rounded-full shadow-lg">
-                  PRÓXIMAMENTE
-                </div>
-              )}
-
               <div className="flex items-center gap-4">
-                {/* Icon */}
-                <div className={`
-                  w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0
-                  ${isSelected
-                    ? 'bg-white/20'
-                    : isDisabled
-                    ? 'bg-gray-200'
-                    : `bg-gradient-to-br ${method.gradient}`
-                  }
-                `}>
-                  <Icon className={`w-8 h-8 ${isSelected || isDisabled ? 'text-white' : 'text-white'}`} />
+                <div className={`w-14 h-14 rounded-xl flex items-center justify-center bg-gradient-to-br ${method.gradient}`}>
+                  <Icon className="w-7 h-7 text-white" />
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 text-left">
-                  <h4 className={`
-                    text-lg font-black mb-1
-                    ${isSelected ? 'text-white' : isDisabled ? 'text-gray-500' : method.textColor}
-                  `}>
+                  <h4 className={`font-black ${isSelected ? 'text-white' : method.textColor}`}>
                     {method.name}
                   </h4>
-                  <p className={`
-                    text-sm font-semibold
-                    ${isSelected ? 'text-white/90' : isDisabled ? 'text-gray-400' : 'text-gray-600'}
-                  `}>
+                  <p className={`text-sm ${isSelected ? 'text-white/90' : 'text-gray-600'}`}>
                     {method.description}
                   </p>
                 </div>
 
-                {/* Radio Indicator */}
-                <div className={`
-                  w-6 h-6 rounded-full border-3 flex items-center justify-center flex-shrink-0
-                  transition-all
-                  ${isSelected
-                    ? 'border-white bg-white'
-                    : isDisabled
-                    ? 'border-gray-300'
-                    : 'border-gray-300 group-hover:border-gray-400'
-                  }
-                `}>
-                  {isSelected && (
-                    <div className={`w-3 h-3 rounded-full bg-gradient-to-br ${method.gradient}`} />
-                  )}
+                <div className={`w-5 h-5 rounded-full border-3 ${isSelected ? 'bg-white border-white' : 'border-gray-300'}`}>
+                  {isSelected && <div className={`w-2.5 h-2.5 rounded-full bg-gradient-to-br ${method.gradient}`} />}
                 </div>
               </div>
-
-              {/* Selected Indicator Border */}
-              {isSelected && (
-                <div className="absolute inset-0 border-4 border-white/30 rounded-2xl pointer-events-none" />
-              )}
             </button>
           )
         })}
       </div>
 
-      {/* Security Notice */}
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 mt-6">
-        <div className="flex items-start gap-3">
-          <Shield className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h5 className="font-bold text-green-900 mb-1 text-sm">
-              Pago 100% seguro
-            </h5>
-            <p className="text-xs text-green-800 leading-relaxed">
-              Usamos encriptación de nivel bancario. Tus datos financieros nunca son almacenados en nuestros servidores.
-            </p>
-          </div>
+      {/* ❌ ERROR */}
+      {error && (
+        <div className="mt-3 flex items-center gap-2 text-sm text-red-600 font-semibold">
+          <span>⚠️</span>
+          <span>{error}</span>
         </div>
-      </div>
+      )}
     </div>
   )
 }

@@ -1,8 +1,3 @@
-/**
- * VideoRecorder Component - MEJORADO (EPIC 6)
- * Permite grabar video O subir desde galería
- */
-
 import { useState, useRef, useEffect } from 'react'
 import {
   Video,
