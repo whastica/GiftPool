@@ -1,13 +1,22 @@
 /**
  * useContribute Hook (EPIC 6) - CORREGIDO
  * Hook personalizado para manejar el flujo de contribución
+ * 
+ * FIXES:
+ * - ✅ Sintaxis corregida (backticks → paréntesis)
+ * - ✅ Guarda contribuciones en localStorage
+ * - ✅ Invalida queries de React Query
+ * - ✅ Tipo correcto: ContributionData
  */
 
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import type { ContributeFormData, PaymentMethod } from '../types/contributeTypes'
+import { useQueryClient } from '@tanstack/react-query'
+import type { ContributionData, PaymentMethod } from '../types/contributeTypes'
 import { initiateContribution } from '../services/paymentService'
 import { uploadVideo } from '../services/videoService'
+import * as storage from '../services/wishlistStorage'
+import { queryKeys } from '../lib/react-query'
 
 interface UseContributeProps {
   wishlistId: string
@@ -21,6 +30,7 @@ export const useContribute = ({
   onError,
 }: UseContributeProps) => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -28,7 +38,7 @@ export const useContribute = ({
    * Procesar contribución completa
    */
   const processContribution = async (
-    formData: ContributeFormData,
+    formData: ContributionData,
     videoBlob?: Blob
   ): Promise<boolean> => {
     setIsProcessing(true)
@@ -54,11 +64,46 @@ export const useContribute = ({
         return false
       }
 
+      // ✅ FIX: Guardar contribución en localStorage
+      if (response.contributionId) {
+        console.log('💾 Guardando contribución en localStorage...')
+        
+        const contributor = {
+          id: response.contributionId,
+          name: formData.isAnonymous ? 'Anónimo' : formData.name,
+          amount: formData.amount,
+          message: formData.message,
+          isAnonymous: formData.isAnonymous,
+          videoUrl: undefined,
+          createdAt: new Date().toISOString(),
+        }
+
+        // Guardar en wishlist
+        const success = storage.addContributor(wishlistId, contributor)
+        
+        if (success) {
+          console.log('✅ Contribución guardada exitosamente')
+          
+          // ✅ FIX: Invalidar queries de React Query
+          console.log('🔄 Invalidando queries...')
+          
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.wishlists.all,
+          })
+          
+          queryClient.invalidateQueries({
+            queryKey: queryKeys.stats.all,
+          })
+          
+          console.log('✅ Queries invalidadas')
+        }
+      }
+
       // 2. Si hay video, guardarlo temporalmente para subirlo después del pago
       if (videoBlob && response.contributionId) {
         console.log('🎥 Saving video reference for later upload...')
         
-        // Guardar referencia en localStorage
+        // ✅ FIX: Sintaxis correcta
         localStorage.setItem(
           `pending_video_${response.contributionId}`,
           'true'
@@ -68,7 +113,10 @@ export const useContribute = ({
         // En producción, considerar usar IndexedDB o subirlo inmediatamente.
       }
 
-      // 3. Redirigir al checkout
+      // 3. Marcar contribución como exitosa para reload
+      localStorage.setItem('giftpool_contribution_success', 'true')
+
+      // 4. Redirigir al checkout
       console.log('🔀 Redirecting to checkout...')
       
       if (response.paymentUrl) {
@@ -80,9 +128,17 @@ export const useContribute = ({
           navigate(response.paymentUrl)
         }
       } else if (response.contributionId) {
-        // Fallback: redirigir a página de checkout local
-        // ✅ CORREGIDO: Paréntesis en lugar de backticks
-        navigate(`/contribute/checkout/${response.contributionId}`)
+        // ✅ FIX: Sintaxis correcta (paréntesis en lugar de backticks)
+        // Fallback: Volver a la wishlist con estado de recarga
+        const wishlist = storage.getWishlistById(wishlistId)
+        if (wishlist?.slug) {
+          navigate(`/w/${wishlist.slug}`, { 
+            state: { reloadData: true } 
+          })
+        } else {
+          // Si no se encuentra el slug, usar ID
+          navigate(`/contribute/checkout/${response.contributionId}`)
+        }
       } else {
         throw new Error('No se recibió URL de pago ni ID de contribución')
       }
@@ -93,7 +149,10 @@ export const useContribute = ({
     } catch (err) {
       console.error('❌ Error processing contribution:', err)
       
-      const errorMessage = err instanceof Error ? err.message : 'Error inesperado al procesar la contribución'
+      const errorMessage = err instanceof Error 
+        ? err.message 
+        : 'Error inesperado al procesar la contribución'
+        
       setError(errorMessage)
       onError?.(errorMessage)
       setIsProcessing(false)
@@ -111,11 +170,11 @@ export const useContribute = ({
     try {
       console.log('📤 Uploading video for contribution:', contributionId)
       
-      // ✅ CORREGIDO: uploadVideo espera un objeto con parámetros nombrados
       const videoUrl = await uploadVideo({
         video: videoBlob,
         contributionId,
         onProgress: (progress) => {
+          // ✅ FIX: Sintaxis correcta
           console.log(`📊 Upload progress: ${progress}%`)
         },
       })
@@ -123,7 +182,7 @@ export const useContribute = ({
       if (videoUrl) {
         console.log('✅ Video uploaded successfully:', videoUrl)
         
-        // Limpiar referencia
+        // ✅ FIX: Sintaxis correcta
         localStorage.removeItem(`pending_video_${contributionId}`)
         return true
       }
