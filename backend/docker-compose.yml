@@ -1,0 +1,29 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: giftpool-postgres
+    restart: always
+    environment:
+      POSTGRES_DB: giftpool
+      POSTGRES_USER: giftpool_user
+      POSTGRES_PASSWORD: giftpool_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: giftpool-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@giftpool.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+    ports:
+      - "5050:80"
+
+volumes:
+  postgres_data:
